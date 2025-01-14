@@ -6,16 +6,20 @@ function App() {
     const [ticketData, setTicketData] = React.useState(null);
 
     async function generateQR() {
-        const ticketId = document.getElementById('ticketId').value;
+        const ticketId = document.getElementById('ticketId').value.trim();
         if (!ticketId) {
-            alert('Please enter a ticket ID');
+            setError('Please enter a ticket ID');
             return;
         }
 
         try {
             setLoading(true);
             setError(null);
-            
+            document.getElementById('generateButton').disabled = true;
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('qrCode').innerHTML = '';
+            document.getElementById('actionButtons').style.display = 'none';
+
             const response = await fetch('/generate', {
                 method: 'POST',
                 headers: {
@@ -25,56 +29,101 @@ function App() {
             });
 
             const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
-            }
             
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate QR code');
+            }
+
             setQrCode(data.qrData);
             setTicketData(data.ticketData);
-            
-        } catch (err) {
-            setError(err.message);
+        } catch (error) {
+            console.error('Error:', error);
+            setError(error.message || 'Error generating QR code');
             setQrCode(null);
             setTicketData(null);
         } finally {
             setLoading(false);
+            document.getElementById('generateButton').disabled = false;
+            document.getElementById('loader').style.display = 'none';
         }
     };
 
     function printQR() {
-        const qrImage = document.querySelector('.qr-image');
-        if (!qrImage) return;
+        const qrImage = document.querySelector('#qrCode img');
+        if (!qrImage) {
+            setError('No QR code to print');
+            return;
+        }
 
         const printWindow = window.open('', '', 'width=600,height=600');
-        printWindow.document.write('<html><head><title>Print QR Code</title>');
-        printWindow.document.write('<style>body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }</style>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write('<img src="' + qrImage.src + '" style="width: 100mm; height: 100mm;">');
-        printWindow.document.write('</body></html>');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Print QR Code</title>
+                <style>
+                    body {
+                        margin: 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                    }
+                    img {
+                        width: 100mm;
+                        height: 100mm;
+                    }
+                </style>
+            </head>
+            <body>
+                <img src="${qrImage.src}" alt="QR Code">
+            </body>
+            </html>
+        `);
         printWindow.document.close();
         printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
     };
 
-    function copyQR() {
-        const qrImage = document.querySelector('.qr-image');
-        if (!qrImage) return;
+    async function copyQR() {
+        const qrImage = document.querySelector('#qrCode img');
+        if (!qrImage) {
+            setError('No QR code to copy');
+            return;
+        }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = qrImage.width;
-        canvas.height = qrImage.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(qrImage, 0, 0);
-        
-        canvas.toBlob(function(blob) {
-            const item = new ClipboardItem({ "image/png": blob });
-            navigator.clipboard.write([item]).then(
-                () => alert('QR code copied to clipboard!'),
-                () => alert('Failed to copy QR code')
-            );
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = qrImage.naturalWidth;
+            canvas.height = qrImage.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(qrImage, 0, 0);
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve));
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
+            
+            // Show success message
+            const originalText = document.getElementById('copyButton').textContent;
+            document.getElementById('copyButton').textContent = 'Copied!';
+            setTimeout(() => {
+                document.getElementById('copyButton').textContent = originalText;
+            }, 2000);
+        } catch (error) {
+            console.error('Error:', error);
+            setError('Failed to copy QR code');
+        }
+    };
+
+    React.useEffect(() => {
+        document.getElementById('ticketId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                generateQR();
+            }
         });
-    };
+    }, []);
 
     return (
         <div className="container">
@@ -93,16 +142,20 @@ function App() {
                     />
                     <button
                         className="btn btn-primary"
+                        id="generateButton"
                         onClick={generateQR}
                         disabled={loading || !ticketId}
                     >
                         {loading ? 'Generating...' : 'Generate QR'}
                     </button>
+                    <div id="loader" className="spinner-border text-primary" role="status" style={{display: 'none'}}>
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
 
             {error && (
-                <div className="alert alert-danger" role="alert">
+                <div id="error" className="alert alert-danger" role="alert">
                     {error}
                 </div>
             )}
@@ -110,18 +163,19 @@ function App() {
             {qrCode && (
                 <div className="text-center">
                     <div className="qr-container print-container">
-                        <img
-                            src={`data:image/png;base64,${qrCode}`}
-                            alt="QR Code"
-                            className="qr-image"
-                        />
+                        <div id="qrCode">
+                            <img
+                                src={`data:image/png;base64,${qrCode}`}
+                                alt="QR Code"
+                            />
+                        </div>
                     </div>
                     
-                    <div className="btn-group">
+                    <div id="actionButtons" className="btn-group">
                         <button className="btn btn-success me-2" onClick={printQR}>
                             Print QR
                         </button>
-                        <button className="btn btn-info" onClick={copyQR}>
+                        <button id="copyButton" className="btn btn-info" onClick={copyQR}>
                             Copy QR
                         </button>
                     </div>

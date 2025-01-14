@@ -11,15 +11,20 @@
         <h1>Lottery Ticket QR Generator</h1>
         <div class="input-section">
             <input type="text" id="ticketId" placeholder="Enter Ticket ID">
-            <button onclick="generateQR()">Generate QR Code</button>
+            <button onclick="generateQR()" id="generateButton">Generate QR Code</button>
+        </div>
+        <div class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+            <p>Generating QR Code...</p>
         </div>
         <div class="qr-section">
             <div id="qrCode"></div>
-            <div class="buttons">
-                <button onclick="printQR()" id="printButton" style="display: none;">Print QR Code</button>
-                <button onclick="copyQR()" id="copyButton" style="display: none;">Copy QR Code</button>
+            <div class="buttons" id="actionButtons" style="display: none;">
+                <button onclick="printQR()" id="printButton">Print QR Code</button>
+                <button onclick="copyQR()" id="copyButton">Copy QR Code</button>
             </div>
         </div>
+        <div id="error" class="error" style="display: none;"></div>
     </div>
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
