@@ -2,8 +2,13 @@ import os
 import json
 import time
 import hmac
-from Cryptodome.Cipher import AES
-from Cryptodome.Random import get_random_bytes
+try:
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Random import get_random_bytes
+except ImportError:
+    from Crypto.Cipher import AES
+    from Crypto.Random import get_random_bytes
+
 import qrcode
 from PIL import Image
 import io
