@@ -5,29 +5,32 @@ function App() {
     const [loading, setLoading] = React.useState(false);
     const [ticketData, setTicketData] = React.useState(null);
 
-    const generateQR = async () => {
+    async function generateQR() {
+        const ticketId = document.getElementById('ticketId').value;
+        if (!ticketId) {
+            alert('Please enter a ticket ID');
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
             
-            const response = await fetch('http://localhost:5000/generate', {
+            const response = await fetch('/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ticket_id: ticketId,
-                }),
+                body: JSON.stringify({ ticketId }),
             });
-            
+
             const data = await response.json();
-            
             if (data.error) {
                 throw new Error(data.error);
             }
             
-            setQrCode(data.qr_code);
-            setTicketData(data.ticket_data);
+            setQrCode(data.qrData);
+            setTicketData(data.ticketData);
             
         } catch (err) {
             setError(err.message);
@@ -38,27 +41,39 @@ function App() {
         }
     };
 
-    const printQR = () => {
-        window.print();
+    function printQR() {
+        const qrImage = document.querySelector('.qr-image');
+        if (!qrImage) return;
+
+        const printWindow = window.open('', '', 'width=600,height=600');
+        printWindow.document.write('<html><head><title>Print QR Code</title>');
+        printWindow.document.write('<style>body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<img src="' + qrImage.src + '" style="width: 100mm; height: 100mm;">');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
     };
 
-    const copyQR = async () => {
-        try {
-            const img = document.querySelector('.qr-image');
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            
-            canvas.toBlob(async (blob) => {
-                const item = new ClipboardItem({ 'image/png': blob });
-                await navigator.clipboard.write([item]);
-                alert('QR code copied to clipboard!');
-            });
-        } catch (err) {
-            alert('Failed to copy QR code: ' + err.message);
-        }
+    function copyQR() {
+        const qrImage = document.querySelector('.qr-image');
+        if (!qrImage) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = qrImage.width;
+        canvas.height = qrImage.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(qrImage, 0, 0);
+        
+        canvas.toBlob(function(blob) {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(
+                () => alert('QR code copied to clipboard!'),
+                () => alert('Failed to copy QR code')
+            );
+        });
     };
 
     return (

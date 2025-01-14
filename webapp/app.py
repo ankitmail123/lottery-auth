@@ -19,7 +19,7 @@ if PARENT_DIR not in sys.path:
 from ticket_generator import TicketGenerator
 from ticket_verifier import TicketVerifier
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
 # Initialize generator and verifier with a fixed secret key
@@ -29,17 +29,17 @@ verifier = TicketVerifier(SECRET_KEY)
 
 @app.route('/')
 def index():
-    return send_from_directory(os.path.join(BASE_DIR, 'static'), 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/static/<path:path>')
 def serve_static(path):
-    return send_from_directory(os.path.join(BASE_DIR, 'static'), path)
+    return send_from_directory(app.static_folder, path)
 
 @app.route('/generate', methods=['POST'])
 def generate_ticket():
     try:
         data = request.get_json()
-        ticket_id = data.get('ticket_id')
+        ticket_id = data.get('ticketId')
         if not ticket_id:
             return jsonify({'error': 'Ticket ID is required'}), 400
 
@@ -121,6 +121,10 @@ def verify_ticket():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy'})
+
 if __name__ == '__main__':
-    # Use port 5050 instead of default 5000
-    app.run(debug=True, port=5050)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
