@@ -1,0 +1,47 @@
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.qr-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem 0;
+}
+
+.qr-image {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+}
+
+.print-size {
+    width: 10mm;
+    height: 10mm;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .print-container, .print-container * {
+        visibility: visible;
+    }
+    
+    .print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+    
+    .qr-image {
+        width: 10mm !important;
+        height: 10mm !important;
+    }
+}

@@ -1,0 +1,13 @@
+pillow==10.0.0
+qrcode==7.4.2
+numpy==1.24.3
+opencv-python==4.8.0.74
+pycryptodome==3.18.0
+pyzbar==0.1.9
+matplotlib==3.7.2
+qreader==3.12
+zxing-cpp==2.1.0
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-multipart>=0.0.5
+python-jose>=3.3.0
